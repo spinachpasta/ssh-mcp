@@ -46,7 +46,7 @@ class SSHSession:
                 "-F", "/dev/null",              # Ignore ~/.ssh/config
                 "-o", "BatchMode=yes",          # Prevent interactive password/passphrase prompts
                 "-o", "StrictHostKeyChecking=accept-new", # Auto-accept new host keys without prompting
-                "-o", "ForwardAgent=no",        # Disable agent forwarding
+                "-o", "ForwardAgent=yes",        # Enable agent forwarding to use ssh-add keys
                 "-o", "ClearAllForwardings=yes",# Disable port forwarding
                 "-T", "-q", "--", host
             ],
