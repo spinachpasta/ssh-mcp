@@ -127,7 +127,7 @@ def handle_open_session(args):
             if session.process.poll() is not None:
                 err_output = session.read_all_output().strip()
                 session.reader_thread.join(timeout=0.1)
-                return f"Error opening session: SSH process exited with code {session.process.poll()}. Output: {err_output}"
+                return f"Error opening session: SSH process exited with code {session.process.poll()}. Output: {err_output}. Remote host may be unavailable or you may need to invoke ssh-add."
             time.sleep(0.1)
 
         sessions[session_id] = session
