@@ -5,6 +5,7 @@ import subprocess
 import threading
 import uuid
 import queue
+import time
 
 # ==========================================
 # HOST SECURITY CONFIGURATION
@@ -43,6 +44,8 @@ class SSHSession:
             [
                 "ssh", 
                 "-F", "/dev/null",              # Ignore ~/.ssh/config
+                "-o", "BatchMode=yes",          # Prevent interactive password/passphrase prompts
+                "-o", "StrictHostKeyChecking=accept-new", # Auto-accept new host keys without prompting
                 "-o", "ForwardAgent=no",        # Disable agent forwarding
                 "-o", "ClearAllForwardings=yes",# Disable port forwarding
                 "-T", "-q", "--", host
@@ -116,7 +119,18 @@ def handle_open_session(args):
         
     session_id = str(uuid.uuid4())
     try:
-        sessions[session_id] = SSHSession(host)
+        session = SSHSession(host)
+        
+        # Wait up to 1 second to see if the session immediately drops
+        # (e.g. auth failure with BatchMode=yes)
+        for _ in range(10):
+            if session.process.poll() is not None:
+                err_output = session.read_all_output().strip()
+                session.reader_thread.join(timeout=0.1)
+                return f"Error opening session: SSH process exited with code {session.process.poll()}. Output: {err_output}"
+            time.sleep(0.1)
+
+        sessions[session_id] = session
         return f"Success: Session opened. session_id: {session_id}"
     except Exception as e:
         return f"Error opening session: {str(e)}"
