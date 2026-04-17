@@ -33,17 +33,43 @@ sessions = {}
 # ==========================================
 # CORE SSH LOGIC
 # ==========================================
+def _find_ssh_auth_sock():
+    """Discover SSH_AUTH_SOCK, falling back to macOS launchd agent socket."""
+    sock = os.environ.get("SSH_AUTH_SOCK")
+    if sock and os.path.exists(sock):
+        return sock
+    # On macOS, the system ssh-agent socket is managed by launchd.
+    # When the MCP server is spawned by a client, SSH_AUTH_SOCK may not
+    # be inherited. Ask launchd for the canonical socket path.
+    try:
+        result = subprocess.run(
+            ["launchctl", "getenv", "SSH_AUTH_SOCK"],
+            capture_output=True, text=True, timeout=3
+        )
+        launchd_sock = result.stdout.strip()
+        if launchd_sock and os.path.exists(launchd_sock):
+            return launchd_sock
+    except Exception:
+        pass
+    return None
+
 class SSHSession:
     def __init__(self, host: str):
         self.host = host
         self.output_buffer = queue.Queue(maxsize=MAX_QUEUE_ITEMS)
         
+        # Build subprocess environment, ensuring SSH_AUTH_SOCK is set
+        # so that passphrase-protected keys loaded via ssh-add are accessible.
+        env = os.environ.copy()
+        auth_sock = _find_ssh_auth_sock()
+        if auth_sock:
+            env["SSH_AUTH_SOCK"] = auth_sock
+
         # Spawn in default BINARY mode to prevent host crashes from weird data
         # Explicitly disable port forwarding to prevent the sandbox from pivoting back
         self.process = subprocess.Popen(
             [
                 "ssh", 
-                "-F", "/dev/null",              # Ignore ~/.ssh/config
                 "-o", "BatchMode=yes",          # Prevent interactive password/passphrase prompts
                 "-o", "StrictHostKeyChecking=accept-new", # Auto-accept new host keys without prompting
                 "-o", "ForwardAgent=yes",        # Enable agent forwarding to use ssh-add keys
@@ -53,6 +79,7 @@ class SSHSession:
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, 
+            env=env,
             bufsize=0 # Unbuffered for binary streams
         )
 
