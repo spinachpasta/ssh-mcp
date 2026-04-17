@@ -1,0 +1,5 @@
+# List of allowed SSH hosts
+# Lines starting with # and blank lines are ignored
+
+# Example host
+# user@example.com
