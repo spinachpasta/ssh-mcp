@@ -101,6 +101,12 @@ class SSHSession:
 # ==========================================
 # TOOL HANDLERS
 # ==========================================
+def handle_list_allowed_hosts(args):
+    allowed_hosts = load_allowed_hosts()
+    if not allowed_hosts:
+        return "No allowed hosts configured. hosts.txt might be empty or missing."
+    return "Allowed hosts:\n" + "\n".join(sorted(allowed_hosts))
+
 def handle_open_session(args):
     host = args.get("host")
     
@@ -184,6 +190,15 @@ def handle_request(req):
         send_response(req_id, result={
             "tools": [
                 {
+                    "name": "list_allowed_hosts",
+                    "description": "Returns the list of allowed hosts configured in hosts.txt.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                },
+                {
                     "name": "open_session",
                     "description": "Open an SSH session to any host.",
                     "inputSchema": {
@@ -231,7 +246,9 @@ def handle_request(req):
         tool_args = params.get("arguments", {})
         
         try:
-            if tool_name == "open_session":
+            if tool_name == "list_allowed_hosts":
+                result_text = handle_list_allowed_hosts(tool_args)
+            elif tool_name == "open_session":
                 result_text = handle_open_session(tool_args)
             elif tool_name == "make_input":
                 result_text = handle_make_input(tool_args)
