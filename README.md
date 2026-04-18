@@ -5,7 +5,7 @@ The SSH MCP (Model Context Protocol) server allows the Gemini CLI to execute com
 ## Prerequisites
 
 - **Python 3.x**
-- **Existing SSH Access:** The server uses the system's default `ssh` command but explicitly ignores `~/.ssh/config` (`-F /dev/null`) for security. Therefore, your hostnames or IP addresses must be directly reachable, and authentication must work via default SSH keys (e.g., `~/.ssh/id_rsa`, `~/.ssh/id_ed25519`) or an active SSH agent without requiring password prompts.
+- **Existing SSH Access:** The server uses the system's default `ssh`. Therefore, your hostnames or IP addresses must be directly reachable, and authentication must work via default SSH keys (e.g., `~/.ssh/id_rsa`, `~/.ssh/id_ed25519`) or an active SSH agent without requiring password prompts.
 
 ## 1. Setup Allowed Hosts
 
